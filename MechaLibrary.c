@@ -72,8 +72,6 @@ void PinIOConfig(int pin, int mode){
     else if(pin == 18){
         _TRISB15 = mode;
     }
-        
-    return 0;
 }
 
 void Timer1Setup(int power, int preScale, int period, int timeReset){
@@ -96,6 +94,5 @@ void Timer1Setup(int power, int preScale, int period, int timeReset){
     if(timeReset == 1){
         TMR1 = 0;           // Reset timer to 0
     }
-    return 0;
 }
 

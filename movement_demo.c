@@ -5,8 +5,6 @@
  * Created on October 11, 2019, 13:34
  */
 
-
-
 /* 
  * ============================ DEMO 2 INSTRUCTIONS ============================
  * 
@@ -20,13 +18,40 @@
  * 
  */
 
-// COPY CODE FROM Lab 5
-// Code has not been adjusted. Current functionality is to rotate one stepper
-// motor 180 degrees CW, 270 degrees CCW, then 720 degrees CW at double speed.
+/*
+ * ---------------- CODE FUNCTIONALITY -------------------
+ * This code utilizes 4 states.
+ * State 0 - no movement
+ * State 1 - moving forward before the turn
+ * State 2 - turning 90 degrees CW
+ * State 3 - moving forward after the turn
+ * 
+ * the code has 3 outputs and 1 input.
+ * -OUTPUTS
+ * pin 2 - direction for left stepper
+ * pin 6 - direction for right stepper
+ * pin 14 - pwm signal - indicate motor step
+ * 
+ * -INPUTS
+ * pin 5 - switch change notification
+ * 
+ * The code uses 3 global variables:
+ * OC1count - counts number of signals sent through OC1 (pin 14)
+ * desiredSteps - number of steps before state should change again
+ * state - which state is the robot in
+ * 
+ * 
+ * ================ CHANGES NEEDED ===================
+ * = currently desiredSteps for each state is random. We need to calculate
+ * the correct number of steps for a 90 degree rotation. Measurements
+ * about the wheel base and diameters needs to be taken.
+ * 
+ * = physical connections still need to be made
+ */
 
 #include <xc.h>
 // MECHALIBRARY WAS NOT INCLUDED IN THE LAB
-#include <MechaLibrary.h>
+#include "MechaLibrary.h"
 #pragma config FNOSC = FRCDIV
 
 
@@ -48,6 +73,9 @@ void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void)
         desiredSteps = 600;
         OC1count = 0;
     }
+    else{
+        OC1R = 0;
+    }
 }
 
 
@@ -65,7 +93,8 @@ void _ISR _OC1Interrupt(void)
                 // this ISR is entered.
 
     // PLACE CUSTOM CODE HERE
-   if(OC1count > desiredSteps){
+   OC1count++;
+   if(OC1count >= desiredSteps){
        if(state == 1){
            state = 2; // Change State to Turning right
            // set direction pins
@@ -147,14 +176,8 @@ int main()
     OC1CON2bits.OCTRIG = 0;
     OC1CON1bits.OCM = 0b110;
     
-    
-    //duty cycle
-//    OC1R = 3999;
-    desiredSteps = 600;
-    
     while (1) {
         
     }
-    
     return(0);
 }
