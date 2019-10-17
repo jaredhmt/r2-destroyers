@@ -40,13 +40,16 @@
  * desiredSteps - number of steps before state should change again
  * state - which state is the robot in
  * 
+ * = Motor driver circuit has been breadboarded.
+ * 
+ * = Distance Forward is now coded in inches as an input. INPUT distanceForward
+ * is an input in inches.
  * 
  * ================ CHANGES NEEDED ===================
- * = currently desiredSteps for each state is random. We need to calculate
- * the correct number of steps for a 90 degree rotation. Measurements
- * about the wheel base and diameters needs to be taken.
+ * = breadboard needs to be 'rewired' to accept battery supply power. Note we
+ * still need to have a common ground. This should free the system from the
+ * power supply 
  * 
- * = physical connections still need to be made
  */
 
 #include <xc.h>
@@ -54,6 +57,7 @@
 #include "MechaLibrary.h"
 #pragma config FNOSC = FRCDIV
 
+#define distanceForward = 20; // inches
 
 int OC1count = 0; // Set Global Variable OC1count
 int desiredSteps = 0; // Set Global Variable desiredSteps
@@ -70,7 +74,7 @@ void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void)
     if(_RB1 == 1){
         state = 1; // Change state to be driving forward
         OC1R = 4999; // Set Output Duty Cycle to begin outputting
-        desiredSteps = 600;
+        desiredSteps = (200 / 8.472875) * distanceForward;
         OC1count = 0;
     }
     else{
@@ -101,7 +105,7 @@ void _ISR _OC1Interrupt(void)
            _RA0 = 0;
            _RB2 = 1;
            // set new desired steps
-           desiredSteps = 200;
+           desiredSteps = 192;
        }
        else if(state == 2){
            state = 3; // Change State to Turning right
@@ -109,7 +113,7 @@ void _ISR _OC1Interrupt(void)
            _RA0 = 0;
            _RB2 = 0;
            // set new desired steps
-           desiredSteps = 600;
+           desiredSteps = (200 / 8.472875) * distanceForward;
        }
        else if(state == 3){
            state = 0;
@@ -167,7 +171,7 @@ int main()
     OC1CON2 = 0;
     
     //period
-    OC1RS = 15999;
+    OC1RS = 23999;
     //duty cycle
     OC1R = 0;
     
