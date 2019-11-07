@@ -96,32 +96,34 @@ void Timer1Setup(int power, int preScale, int period, int timeReset){
     }
     
     int moveBot(char dir, float dist){
+        // To call moveBot, use notation:     globalStepVar = moveBot('rit',45);
         // INPUTS:
             // dir: "fwd", "bkw", "lft", "rit"
             // dist: for linear motion, distance in inches
             //       for rotational motion, distance in angular degrees
+        // OUTPUT: stepCount - stepCount to compare to in OCR ISR
         // Pinout notation for step dir: 1- FWD, 0- BKW
         int stepCount;
         if(dir == 'fwd'||dir == 'bkw'){
             stepCount = dist * (200 / 8.472875); //convert linear distance to step count
             if(dir == 'fwd'){
-                //set left dir to 1
-                //set right dir to 0
+                _RB8 = 1; //set left dir to 1
+                _RB9 = 1; //set right dir to 1
             }
             else{
-                //set left dir to 0
-                //set right dir to 0
+                _RB8 = 0; //set left dir to 0
+                _RB9 = 0; //set right dir to 0
             }
         }
         else if(dir == 'lft'||dir == 'rit'){
             stepCount = dist * (51.875 / 24.273); //convert angular distance to step count
             if(dir == 'lft'){
-                //set left dir to 0
-                //set right dir to 1
+                _RB8 = 0; //set left dir to 0
+                _RB9 = 1; //set right dir to 1
             }
             else{
-                //set left dir to 1
-                //set right dir to 0
+                _RB8 = 1; //set left dir to 1
+                _RB9 = 0; //set right dir to 0
             }
         }
         return stepCount;
