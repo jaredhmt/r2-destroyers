@@ -17,3 +17,4 @@ void PinIOConfig(int pin, int mode);
 
 void Timer1Setup(int power, int preScale, int period, int timeReset);
 
+int moveBot(char dir, float dist);

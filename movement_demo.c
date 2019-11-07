@@ -57,7 +57,7 @@
 #include "MechaLibrary.h"
 #pragma config FNOSC = FRCDIV
 
-#define distanceForward = 20; // inches
+int  distanceForward = 20; // inches
 
 int OC1count = 0; // Set Global Variable OC1count
 int desiredSteps = 0; // Set Global Variable desiredSteps
