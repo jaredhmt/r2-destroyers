@@ -301,3 +301,54 @@ void startupConfig(){
         
         
 }
+
+
+int  scan()  {
+    //Pins 7-9,18 will be used as analog inputs and should be configured in the
+    //main or in a config function
+    //We can change this around but
+    //Pin 7 = right sensor
+    //Pin 8 = left sensor
+    //Pin 9 = right sensor
+    //Pin 18 = back sensor
+    
+    //When the function is called
+    //1 = front
+    //2 = left
+    //3= right
+    //4 = back
+    
+    //store the most recent values from the ADC buffer to the corresponding sensors
+    double front = ADC1BUF13;
+    double left = ADC1BUF14;
+    double right = ADC1BUF15;
+    double back = ADC1BUF9;
+    
+    //put the values from each sensor into a vector
+    double sensors[4]={front,left,right,back};
+    
+    double sensor1=0;//declare a variable for the highest input
+    
+    for(int i = 0;i<4;i++){//run through all of the sensor values
+        if(sensors(i)>sensor1){
+            sensor1 = sensors(i);//if the current sensor value is higher than the max reset the max
+        }
+    }
+    
+   
+    if (sensor1 == front){
+        return 1;//if the front sensor is highest return 1
+    }
+    else if (sensor1== left){
+        return 2;//if the left sensor is highest return 2
+    }
+    else if (sensor1 == right){
+        return 3;//if the right sensor is highest return 3
+    }
+    else if(sensor1 == back){
+        return 4;//if the back sensor is highest return 4
+    }
+    
+    
+}
+
