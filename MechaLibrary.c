@@ -293,10 +293,10 @@ void startupConfig(){
         // AD1CSS registers
         // SET THE BITS CORRESPONDING TO CHANNELS THAT YOU WANT
         // TO SAMPLE
-        _CSS13 = 1; //scan chanel 1
-        _CSS14 = 1; //scan chanel 1
-        _CSS15 = 1; //scan chanel 1
-        _CSS9 = 1; //scan chanel 1
+        _CSS13 = 1; //scan chanel 13
+        _CSS14 = 1; //scan chanel 14
+        _CSS15 = 1; //scan chanel 15
+        _CSS9 = 1; //scan chanel 9
         _ADON = 1;    // AD1CON1<15> -- Turn on A/D
         
         

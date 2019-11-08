@@ -46,6 +46,15 @@
 .DS_Store
 ._.DS_Store
 
+# Make files
+*.properties
+*.mk
+*.xml
+.nbproject/
+.dist/
+.build/
+.debug/
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd
