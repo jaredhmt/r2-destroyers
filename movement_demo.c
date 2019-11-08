@@ -53,7 +53,6 @@
  */
 
 #include <xc.h>
-// MECHALIBRARY WAS NOT INCLUDED IN THE LAB
 #include "MechaLibrary.h"
 #pragma config FNOSC = FRCDIV
 
@@ -126,8 +125,7 @@ void _ISR _OC1Interrupt(void)
 
 //-----------------------------------------------------
 // Main Function
-int main()
-{
+int main(){
 
    // Configure the digital I/O ports
 //    // PLACE CODE TO CONFIGURE THE DIGITAL I/O PORTS HERE
