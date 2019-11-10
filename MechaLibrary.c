@@ -99,18 +99,18 @@ void PinIOConfig(int pin, int mode){
     }
 } */
 
-int moveBot(char dir, float dist){
+int moveBot(int dir, float dist){
     // To call moveBot, use notation:     globalStepVar = moveBot('rit',45);
     // INPUTS:
-        // dir: "fwd", "bkw", "lft", "rit"
+        // dir: "fwd" 1, "bkw" 2, "lft" 3, "rit" 4
         // dist: for linear motion, distance in inches
         //       for rotational motion, distance in angular degree
     // OUTPUT: stepCount - stepCount to compare to in OCR ISR
     // Pinout notation for step dir: 1- FWD, 0- BKW
     int stepCount;
-    if(dir == 'fwd'||dir == 'bkw'){
+    if(dir == 1||dir == 2){
         stepCount = dist * (200 / 8.472875); //convert linear distance to step count
-        if(dir == 'fwd'){
+        if(dir == 1){
             _RB8 = 1; //set left dir to 1
             _RB9 = 1; //set right dir to 1
         }
@@ -119,9 +119,9 @@ int moveBot(char dir, float dist){
             _RB9 = 0; //set right dir to 0
         }
     }
-    else if(dir == 'lft'||dir == 'rit'){
+    else if(dir == 3||dir == 4){
         stepCount = dist * (51.875 / 24.273); //convert angular distance to step count
-        if(dir == 'lft'){
+        if(dir == 3){
             _RB8 = 0; //set left dir to 0
             _RB9 = 1; //set right dir to 1
         }
@@ -167,7 +167,11 @@ void startupConfig(){
         // Clear control bits
         OC2CON1 = 0;
         OC2CON2 = 0;
-
+         // OC2 INTERUPT
+        _OC2IE = 1;
+        _OC2IF = 0;
+        _OC2IP = 4;
+        
         // Set period and duty cycle
         OC2R = 0;                // Set Output Compare value to achieve
                                     // desired duty cycle. This is the number
@@ -259,7 +263,7 @@ void startupConfig(){
         _CN0PUE = 0;
         
         _CNIF = 0;
-        _CNIE =1;
+        _CNIE = 1;
         
     // -----SETUP ANALOG CHANNELS-----
         _ADON = 0;    // AD1CON1<15> -- Turn off A/D during config
@@ -302,7 +306,7 @@ void startupConfig(){
         
 }
 
-
+/*
 int  scan()  {
     //Pins 7-9,18 will be used as analog inputs and should be configured in the
     //main or in a config function
@@ -352,3 +356,4 @@ int  scan()  {
     
 }
 
+*/
