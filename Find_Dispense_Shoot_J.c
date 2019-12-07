@@ -38,7 +38,8 @@ int  distanceForward = 20; // inches
 int OC2count = 0; // Set Global Variable OC1count
 int desiredSteps_aim = 0; // Set Global Variable desiredSteps
 int state = 0; // Set Global Variable state
-int substate = 0;
+int substate = 0;//this defines where the shoooter is currently aimed
+//0 = front motor, 1 = left goal, 2 = right goal
 int desiredSteps_movement = 3000;
 int OC1count = 0;
 int currentGoal = 0;//defines where the shooter is currently aimed
@@ -256,12 +257,12 @@ void PinIOConfig(void){
     OC3CON2 = 0;
    
     // Set period and duty cycle
-    OC3R = 0;               // Set Output Compare value to achieve
+    OC3R = 45000;               // Set Output Compare value to achieve
                                 // desired duty cycle. This is the number
                                 // of timer counts when the OC should send
                                 // the PWM signal low. The duty cycle as a
                                 // fraction is OC1R/OC1RS.
-    OC3RS = 49999;             // Period of OC1 to achieve desired PWM 
+    OC3RS = 49999;             // Period of OC3 to achieve desired PWM 
                                 // frequency, FPWM. See Equation 15-1
                                 // in the datasheet. For example, for
                                 // FPWM = 1 kHz, OC1RS = 3999. The OC1RS 
@@ -357,38 +358,38 @@ int main(void) {
 //                        _LATA0 = 1; // START DC MOTORS
 
             // AIM AND SHOOT
-            if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 1 ){
+            if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 1 ){//if front goal is active, and we are currently aimed at left goal
 //                _OC2IE = 1;
                 _LATA1 = 1;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 0;
-//                __delay_ms(3000);
-//                OC3R = 46500;
+                __delay_ms(1000);
+                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 0;
             }
-            else if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 2 ){
+            else if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 2 ){//if front goal is active and we are currently aimed at right goal
 //                _OC2IE = 1;
                 _LATA1 = 0;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 0;
-//                __delay_ms(3000);
-//                OC3R = 46500;
+                __delay_ms(1000);
+                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 0;
             }
-            else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 0){
+            else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 0){//if right goal is active and we are currently aimed at front goal
 //                _OC2IE = 1;
                 _LATA1 = 0;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 1;
-//                __delay_ms(3000);
-//                OC3R = 45000;
+                __delay_ms(1000);
+                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
@@ -399,8 +400,8 @@ int main(void) {
                 desiredSteps_aim = 100;
                 OC2R = 1600;
                 substate = 1;
-//                __delay_ms(3000);
-//                OC3R = 45000;
+                __delay_ms(1000);
+                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
@@ -411,8 +412,8 @@ int main(void) {
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 2;
-//                __delay_ms(3000);
-//                OC3R = 47500;
+                __delay_ms(1000);
+                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
@@ -423,19 +424,19 @@ int main(void) {
                 desiredSteps_aim = 100;
                 OC2R = 1600;
                 substate = 2;
-//                __delay_ms(3000);
-//                OC3R = 47500;
+                __delay_ms(1000);
+                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
             } 
             else if (ADC1BUF9 >= vThresh2 && substate == 0 ){
-//                __delay_ms(4000);
-//                if(ADC1BUF9 >= vThresh){
-//                    OC3R = 46500;
+                __delay_ms(4000);
+                if(ADC1BUF9 >= vThresh){
+                    OC3R = 46500;
 //                    __delay_ms(7000);
 //                    OC3R = 0;
-//                } 
+                } 
                 _LATB14 = 0;
             }
         }
