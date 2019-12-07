@@ -31,6 +31,7 @@ Demonstrate the ability of your robot to find the dispenser, collect three
 #pragma config FNOSC = FRCDIV//set the oscillator
 
 #define vThresh 1000//threshold for IR detection
+#define vThresh2 500 // threshold for aiming IR detection
 
 int  distanceForward = 20; // inches
 
@@ -331,7 +332,7 @@ int main(void) {
             _LATB9 = 1;
             _LATB8 = 0; // pin 12 is high sets direction of left stepper
             _LATB7 = 0; // pin 11 is low sets direction for right stepper
-            desiredSteps_movement = 300;   
+            desiredSteps_movement = 30;   
             OC1R = 1000;
         }
         else if(state == 3){// AIM AND SHOOT
@@ -341,7 +342,10 @@ int main(void) {
  *  USING THIS CODE, I DISCOVERED THAT THE FRONT IR (9) IS THE MOST SENSITIVE
  *  AND CAN SENSE IR CLICKER FROM ALMOST A FOOT AWAY. THE TWO SIDE SENSORS ARE
  *  MUCH LESS SENSITIVE AND THE CLICKER MUST BE WITHIN AN INCH OF THE SENSOR.
-            if(ADC1BUF14 > 0.5 * vThresh){
+ *  I HAVE NOW VERIFIED THAT OC2count AND substate ARE BOTH 0 WHEN ENTERING
+ *  STATE 3. NEXT STEP, UNCOMMENT LOGIC AND HAVE PIN 17 GO HIGH/LOW BASED ON 
+ *  substate.
+            if(ADC1BUF9 > 0.5 * vThresh && OC2count == 0 && substate == 0){
                 _LATB14 = 1;
             }
             else{
@@ -351,9 +355,9 @@ int main(void) {
             // TURN OFF MOVEMENT STEPPERS AND PWM
             
 //                        _LATA0 = 1; // START DC MOTORS
-/*
+
             // AIM AND SHOOT
-            if (ADC1BUF9 >= vThresh && OC2count == 0 && substate == 1 ){
+            if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 1 ){
 //                _OC2IE = 1;
 //                _LATA1 = 1;
 //                OC2R = 1600;
@@ -365,7 +369,7 @@ int main(void) {
 //                OC3R = 0;
                 _LATB14 = 0;
             }
-            else if (ADC1BUF9 >= vThresh && OC2count == 0 && substate == 2 ){
+            else if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 2 ){
 //                _OC2IE = 1;
 //                _LATA1 = 0;
 //                OC2R = 1600;
@@ -377,7 +381,7 @@ int main(void) {
 //                OC3R = 0;
                 _LATB14 = 0;
             }
-            else if (ADC1BUF14 >= vThresh && OC2count == 0 && substate == 0){
+            else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 0){
 //                _OC2IE = 1;
 //                _LATA1 = 0;
 //                OC2R = 1600;
@@ -389,7 +393,7 @@ int main(void) {
 //                OC3R = 0;
                 _LATB14 = 1;
             }
-            else if (ADC1BUF14 >= vThresh && OC2count == 0 && substate == 2){
+            else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 2){
 //                _OC2IE = 1;
 //                _LATA1 = 0;
 //                OC2R = 1600;
@@ -401,7 +405,7 @@ int main(void) {
 //                OC3R = 0;
                 _LATB14 = 1;
             }
-            else if (ADC1BUF13 >= vThresh && OC2count == 0 && substate == 0){
+            else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 0){
 //                _OC2IE = 1;
 //                _LATA1 = 1;
 //                OC2R = 1600;
@@ -413,7 +417,7 @@ int main(void) {
 //                OC3R = 0;
                 _LATB14 = 1;
             }
-            else if (ADC1BUF13 >= vThresh && OC2count == 0 && substate == 1){
+            else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 1){
 //                _OC2IE = 1;
 //                _LATA1 = 1;
 //                OC2R = 1600;
@@ -425,7 +429,7 @@ int main(void) {
 //                OC3R = 0;
                 _LATB14 = 1;
             } 
-            else if (ADC1BUF9 >= vThresh && substate == 0 ){
+            else if (ADC1BUF9 >= vThresh2 && substate == 0 ){
 //                __delay_ms(4000);
 //                if(ADC1BUF9 >= vThresh){
 //                    OC3R = 1500;
@@ -433,7 +437,7 @@ int main(void) {
 //                    OC3R = 0;
 //                } 
                 _LATB14 = 0;
-            }*/
+            }
         }
 
     }
