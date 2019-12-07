@@ -304,17 +304,20 @@ int main(void) {
     PinIOConfig();
     __delay_ms(1000);
     state = 0;
-    _LATB8 = 0;               //Sets the direction pin - Directions don't matter as long as the two are different
-    _LATA4 = 1;               //Sets the direction pin - See above
-    _OC1IE = 1;
-    OC1R = 1000;              //You spin my head right round right round like a record baby right round round round.
-    _LATB9 = 1;
+
     while(1){
+        if(state ==0){
+            _LATB8 = 0;               //Sets the direction pin - Directions don't matter as long as the two are different
+            _LATB7 = 1;               //Sets the direction pin - See above
+            _OC1IE = 1;
+            OC1R = 1000;              //You spin my head right round right round like a record baby right round round round.
+            _LATB9 = 1;
+        }
         if(state == 1){//retrieve balls
             _LATB9 = 1;//activate the move motor
-            _LATA4 = 0;//set directions to backwards
+            _LATB7 = 0;//set directions to backwards
             _LATB8 = 0;//set directions to backwards
-            desiredSteps_movement = 300;
+            desiredSteps_movement = 3000;
             OC1R = 1000;//turn on the move PWM
             
         }
