@@ -71,32 +71,33 @@ void _ISR _OC1Interrupt(void){
             
         }
     }
-    else if(OC1count >= desiredSteps_movement){
+    else if(OC1count >= desiredSteps_movement && state == 2){
         OC1R = 0;
         _LATB9 = 0; // pin 13 is high - the sleeps the pin on both move steppers
-        if(state == 2){//if we are returning to the center
-            state == 3;//change to the aim shooter state
-        }
+        state == 3;//change to the aim shooter state
     }
 }
 void _ISR _CNInterrupt(void){
-_CNIF = 0; // Clear interrupt flag (IFS1 register)
-// Figure out which pin changed if you?re looking at multiple pins
-// This will handle the limit switch interrupt when the robot moves into the corner.
-//It will flash the LED on and off a certain number of times
+    _CNIF = 0; // Clear interrupt flag (IFS1 register)
+    
+    // This will handle the limit switch interrupt when the robot moves into the corner.
+    //It will flash the LED on and off a certain number of times
     int flashcount = 0;
     
     if(_RA4 == 1 && state == 1){
         OC1R = 0;
-        _LATB9 = 0;
-        while(flashcount < 10){
+        // _LATB9 = 0;
+        while(flashcount < 4){
          _LATB14 = 1;//turn on pin 17
-         __delay_ms(500);
+         __delay_ms(250);
          _LATB14 = 0;
-         __delay_ms(500);
+         __delay_ms(250);
          flashcount++;
         }
         state = 2;//now that we have dispensed the balls, change the state
+        OC1count = 0;
+        desiredSteps_movement = 300;   
+        OC1R = 1000;
     }
     else{
         _LATB14 = 0;
@@ -302,7 +303,10 @@ _CNIE = 1; // Enable CN interrupts (IEC1 register)
 
 int main(void) {
     PinIOConfig();
-    __delay_ms(1000);
+//    __delay_ms(1000);
+    while (_RB13 == 0){
+    }
+    __delay_ms(500);
     state = 0;
 
     while(1){
@@ -313,98 +317,104 @@ int main(void) {
             OC1R = 1000;              //You spin my head right round right round like a record baby right round round round.
             _LATB9 = 1;
         }
-        if(state == 1){//retrieve balls
+        if(state == 1){//move to dispenser and retrieve balls
             _LATB9 = 1;//activate the move motor
-            _LATB7 = 0;//set directions to backwards
-            _LATB8 = 0;//set directions to backwards
-            desiredSteps_movement = 3000;
+            _LATB7 = 1;//set directions to backwards
+            _LATB8 = 1;//set directions to backwards
+            desiredSteps_movement = 30000;
             OC1R = 1000;//turn on the move PWM
             
         }
         else if(state == 2){//return to center
-            _LATB8 = 1; // pin 12 is high sets direction of left stepper
-            _LATB7 = 1; // pin 11 is low sets direction for right stepper
+            _LATB14 = 1;//turn on pin 17
+            
+            _LATB9 = 1;
+            _LATB8 = 0; // pin 12 is high sets direction of left stepper
+            _LATB7 = 0; // pin 11 is low sets direction for right stepper
             desiredSteps_movement = 300;   
+            OC1R = 1000;
         }
         else if(state == 3){// AIM AND SHOOT
+            _LATB14 = 0;
+            
             // TURN OFF MOVEMENT STEPPERS AND PWM
             
-            _LATA0 = 1; // START DC MOTORS
-            // AIM AND SHOOT
-            if (ADC1BUF9 >= vThresh && OC2count == 0 && substate == 1 ){
-                _OC2IE = 1;
-                _LATA1 = 1;
-                OC2R = 1600;
-                substate = 0;
-                desiredSteps = 50;
-                __delay_ms(3000);
-                OC3R = 1500;
-                __delay_ms(7000);
-                OC3R = 0;
-            }
-            else if (ADC1BUF9 >= vThresh && OC2count == 0 && substate == 2 ){
-                _OC2IE = 1;
-                _LATA1 = 0;
-                OC2R = 1600;
-                substate = 0;
-                desiredSteps = 50;
-                __delay_ms(3000);
-                OC3R = 1500;
-                __delay_ms(7000);
-                OC3R = 0;
-            }
-            else if (ADC1BUF14 >= vThresh && OC2count == 0 && substate == 0){
-                _OC2IE = 1;
-                _LATA1 = 0;
-                OC2R = 1600;
-                substate = 1;
-                desiredSteps = 50;
-                __delay_ms(3000);
-                OC3R = 1500;
-                __delay_ms(7000);
-                OC3R = 0;
-            }
-            else if (ADC1BUF14 >= vThresh && OC2count == 0 && substate == 2){
-                _OC2IE = 1;
-                _LATA1 = 0;
-                OC2R = 1600;
-                substate = 1;
-                desiredSteps = 100;
-                __delay_ms(3000);
-                OC3R = 1500;
-                __delay_ms(7000);
-                OC3R = 0;
-            }
-            else if (ADC1BUF13 >= vThresh && OC2count == 0 && substate == 0){
-                _OC2IE = 1;
-                _LATA1 = 1;
-                OC2R = 1600;
-                substate = 2;
-                desiredSteps = 50;
-                __delay_ms(3000);
-                OC3R = 1500;
-                __delay_ms(7000);
-                OC3R = 0;
-            }
-            else if (ADC1BUF13 >= vThresh && OC2count == 0 && substate == 1){
-                _OC2IE = 1;
-                _LATA1 = 1;
-                OC2R = 1600;
-                substate = 2;
-                desiredSteps = 100;
-                __delay_ms(3000);
-                OC3R = 1500;
-                __delay_ms(7000);
-                OC3R = 0;
-            } 
-            else if (ADC1BUF9 >= vThresh && substate == 0 ){
-                __delay_ms(4000);
-                if(ADC1BUF15 >= vThresh){
-                    OC3R = 1500;
-                    __delay_ms(7000);
-                    OC3R = 0;
-                } 
-            }
+            //            _LATA0 = 1; // START DC MOTORS
+            //            // AIM AND SHOOT
+            //            if (ADC1BUF9 >= vThresh && OC2count == 0 && substate == 1 ){
+            //                _OC2IE = 1;
+            //                _LATA1 = 1;
+            //                OC2R = 1600;
+            //                substate = 0;
+            //                desiredSteps = 50;
+            //                __delay_ms(3000);
+            //                OC3R = 1500;
+            //                __delay_ms(7000);
+            //                OC3R = 0;
+            //            }
+            //            else if (ADC1BUF9 >= vThresh && OC2count == 0 && substate == 2 ){
+            //                _OC2IE = 1;
+            //                _LATA1 = 0;
+            //                OC2R = 1600;
+            //                substate = 0;
+            //                desiredSteps = 50;
+            //                __delay_ms(3000);
+            //                OC3R = 1500;
+            //                __delay_ms(7000);
+            //                OC3R = 0;
+            //            }
+            //            else if (ADC1BUF14 >= vThresh && OC2count == 0 && substate == 0){
+            //                _OC2IE = 1;
+            //                _LATA1 = 0;
+            //                OC2R = 1600;
+            //                substate = 1;
+            //                desiredSteps = 50;
+            //                __delay_ms(3000);
+            //                OC3R = 1500;
+            //                __delay_ms(7000);
+            //                OC3R = 0;
+            //            }
+            //            else if (ADC1BUF14 >= vThresh && OC2count == 0 && substate == 2){
+            //                _OC2IE = 1;
+            //                _LATA1 = 0;
+            //                OC2R = 1600;
+            //                substate = 1;
+            //                desiredSteps = 100;
+            //                __delay_ms(3000);
+            //                OC3R = 1500;
+            //                __delay_ms(7000);
+            //                OC3R = 0;
+            //            }
+            //            else if (ADC1BUF13 >= vThresh && OC2count == 0 && substate == 0){
+            //                _OC2IE = 1;
+            //                _LATA1 = 1;
+            //                OC2R = 1600;
+            //                substate = 2;
+            //                desiredSteps = 50;
+            //                __delay_ms(3000);
+            //                OC3R = 1500;
+            //                __delay_ms(7000);
+            //                OC3R = 0;
+            //            }
+            //            else if (ADC1BUF13 >= vThresh && OC2count == 0 && substate == 1){
+            //                _OC2IE = 1;
+            //                _LATA1 = 1;
+            //                OC2R = 1600;
+            //                substate = 2;
+            //                desiredSteps = 100;
+            //                __delay_ms(3000);
+            //                OC3R = 1500;
+            //                __delay_ms(7000);
+            //                OC3R = 0;
+            //            } 
+            //            else if (ADC1BUF9 >= vThresh && substate == 0 ){
+            //                __delay_ms(4000);
+            //                if(ADC1BUF15 >= vThresh){
+            //                    OC3R = 1500;
+            //                    __delay_ms(7000);
+            //                    OC3R = 0;
+            //                } 
+            //            }
         }
 
     }
