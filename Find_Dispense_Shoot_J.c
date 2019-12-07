@@ -51,7 +51,7 @@ void _ISR _OC2Interrupt(void){
     // this ISR is entered.
     // PLACE CUSTOM CODE HERE
     OC2count++;
-    if(OC2count >= desiredSteps_aim){
+    if(OC2count >= desiredSteps_aim / 3){
         OC2R = 0;
         //_LATA1 = 0;
         OC2count = 0;
@@ -336,7 +336,7 @@ int main(void) {
             OC1R = 1000;
         }
         else if(state == 3){// AIM AND SHOOT
-//            _LATB14 = 1;
+            _OC2IE = 1;
 /*
  *  THIS SECTION VERIFIES THAT EACH IR SENSOR WORKS.
  *  USING THIS CODE, I DISCOVERED THAT THE FRONT IR (9) IS THE MOST SENSITIVE
@@ -352,79 +352,79 @@ int main(void) {
                 _LATB14 = 0;
             }
 */
-            // TURN OFF MOVEMENT STEPPERS AND PWM
             
+            // TURN OFF MOVEMENT STEPPERS AND PWM
 //                        _LATA0 = 1; // START DC MOTORS
 
             // AIM AND SHOOT
             if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 1 ){
 //                _OC2IE = 1;
-//                _LATA1 = 1;
-//                OC2R = 1600;
-//                substate = 0;
-//                desiredSteps_aim = 50;
+                _LATA1 = 1;
+                desiredSteps_aim = 50;
+                OC2R = 1600;
+                substate = 0;
 //                __delay_ms(3000);
-//                OC3R = 1500;
+//                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 0;
             }
             else if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 2 ){
 //                _OC2IE = 1;
-//                _LATA1 = 0;
-//                OC2R = 1600;
-//                substate = 0;
-//                desiredSteps_aim = 50;
+                _LATA1 = 0;
+                desiredSteps_aim = 50;
+                OC2R = 1600;
+                substate = 0;
 //                __delay_ms(3000);
-//                OC3R = 1500;
+//                OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 0;
             }
             else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 0){
 //                _OC2IE = 1;
-//                _LATA1 = 0;
-//                OC2R = 1600;
-//                substate = 1;
-//                desiredSteps_aim = 50;
+                _LATA1 = 0;
+                desiredSteps_aim = 50;
+                OC2R = 1600;
+                substate = 1;
 //                __delay_ms(3000);
-//                OC3R = 1500;
+//                OC3R = 45000;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
             }
             else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 2){
 //                _OC2IE = 1;
-//                _LATA1 = 0;
-//                OC2R = 1600;
-//                substate = 1;
-//                desiredSteps_aim = 100;
+                _LATA1 = 0;
+                desiredSteps_aim = 100;
+                OC2R = 1600;
+                substate = 1;
 //                __delay_ms(3000);
-//                OC3R = 1500;
+//                OC3R = 45000;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
             }
             else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 0){
 //                _OC2IE = 1;
-//                _LATA1 = 1;
-//                OC2R = 1600;
-//                substate = 2;
-//                desiredSteps_aim = 50;
+                _LATA1 = 1;
+                desiredSteps_aim = 50;
+                OC2R = 1600;
+                substate = 2;
 //                __delay_ms(3000);
-//                OC3R = 1500;
+//                OC3R = 47500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
             }
             else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 1){
 //                _OC2IE = 1;
-//                _LATA1 = 1;
-//                OC2R = 1600;
-//                substate = 2;
-//                desiredSteps_aim = 100;
+                _LATA1 = 1;
+                desiredSteps_aim = 100;
+                OC2R = 1600;
+                substate = 2;
 //                __delay_ms(3000);
-//                OC3R = 1500;
+//                OC3R = 47500;
 //                __delay_ms(7000);
 //                OC3R = 0;
                 _LATB14 = 1;
@@ -432,7 +432,7 @@ int main(void) {
             else if (ADC1BUF9 >= vThresh2 && substate == 0 ){
 //                __delay_ms(4000);
 //                if(ADC1BUF9 >= vThresh){
-//                    OC3R = 1500;
+//                    OC3R = 46500;
 //                    __delay_ms(7000);
 //                    OC3R = 0;
 //                } 
