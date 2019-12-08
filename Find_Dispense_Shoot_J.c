@@ -30,8 +30,8 @@ Demonstrate the ability of your robot to find the dispenser, collect three
 
 #pragma config FNOSC = FRCDIV//set the oscillator
 
-#define vThresh 1000//threshold for IR detection
-#define vThresh2 500 // threshold for aiming IR detection
+#define vThresh 2450//threshold for IR detection
+#define vThresh2 1000 // threshold for aiming IR detection
 
 int  distanceForward = 20; // inches
 
@@ -46,19 +46,19 @@ int currentGoal = 0;//defines where the shooter is currently aimed
 int desiredGoal = 0;//defines where the shooter should be aimed
 //front goal  = 0, left goal = 1, right goal = -1
 
-void _ISR _OC2Interrupt(void){
+void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void){
 
     _OC2IF = 0;  // Remember to clear the OC2 interrupt flag when
     // this ISR is entered.
     // PLACE CUSTOM CODE HERE
     OC2count++;
-    if(OC2count >= desiredSteps_aim / 3){
+    if(OC2count >= desiredSteps_aim){
         OC2R = 0;
         //_LATA1 = 0;
         OC2count = 0;
     }
 }
-void _ISR _OC1Interrupt(void){
+void __attribute__((interrupt, no_auto_psv)) _OC1Interrupt(void){
 
     _OC1IF = 0;  // Remember to clear the OC1 interrupt flag when
     // this ISR is entered.
@@ -80,7 +80,7 @@ void _ISR _OC1Interrupt(void){
         OC2count = 0;
     }
 }
-void _ISR _CNInterrupt(void){
+void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void){
     _CNIF = 0; // Clear interrupt flag (IFS1 register)
     
     // This will handle the limit switch interrupt when the robot moves into the corner.
@@ -90,16 +90,16 @@ void _ISR _CNInterrupt(void){
     if(_RA4 == 1 && state == 1){
         OC1R = 0;
         // _LATB9 = 0;
-        while(flashcount < 4){
+        while(flashcount < 5){
             _LATB14 = 1;//turn on pin 17
-            __delay_ms(250);
+            __delay_ms(200);
             _LATB14 = 0;
-            __delay_ms(250);
+            __delay_ms(200);
             flashcount++;
         }
         state = 2;//now that we have dispensed the balls, change the state
         OC1count = 0;
-        desiredSteps_movement = 300;   
+        desiredSteps_movement = 600;   
         OC1R = 1000;
     }
     else{
@@ -333,11 +333,13 @@ int main(void) {
             _LATB9 = 1;
             _LATB8 = 0; // pin 12 is high sets direction of left stepper
             _LATB7 = 0; // pin 11 is low sets direction for right stepper
-            desiredSteps_movement = 30;   
+            desiredSteps_movement = 600;   
             OC1R = 1000;
         }
         else if(state == 3){// AIM AND SHOOT
             _OC2IE = 1;
+            _LATB9 = 0; // SLEEP MOVEMENT STEPPERS
+            _LATA0 = 1; // TURN ON DC MOTORS
 /*
  *  THIS SECTION VERIFIES THAT EACH IR SENSOR WORKS.
  *  USING THIS CODE, I DISCOVERED THAT THE FRONT IR (9) IS THE MOST SENSITIVE
@@ -358,29 +360,29 @@ int main(void) {
 //                        _LATA0 = 1; // START DC MOTORS
 
             // AIM AND SHOOT
-            if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 1 ){//if front goal is active, and we are currently aimed at left goal
+            if (ADC1BUF9 >= vThresh2*1.2 && OC2count == 0 && substate == 1 ){//if front goal is active, and we are currently aimed at left goal
 //                _OC2IE = 1;
                 _LATA1 = 1;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 0;
-                __delay_ms(1000);
+                __delay_ms(1500);
                 OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
-                _LATB14 = 0;
+                _LATA0 = 1;
             }
-            else if (ADC1BUF9 >= vThresh2 && OC2count == 0 && substate == 2 ){//if front goal is active and we are currently aimed at right goal
+            else if (ADC1BUF9 >= vThresh2*1.2 && OC2count == 0 && substate == 2 ){//if front goal is active and we are currently aimed at right goal
 //                _OC2IE = 1;
                 _LATA1 = 0;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 0;
-                __delay_ms(1000);
+                __delay_ms(2000);
                 OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
-                _LATB14 = 0;
+                _LATA0 = 1;
             }
             else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 0){//if right goal is active and we are currently aimed at front goal
 //                _OC2IE = 1;
@@ -388,11 +390,11 @@ int main(void) {
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 1;
-                __delay_ms(1000);
+                __delay_ms(2000);
                 OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
-                _LATB14 = 1;
+                _LATA0 = 1;
             }
             else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 2){
 //                _OC2IE = 1;
@@ -400,11 +402,11 @@ int main(void) {
                 desiredSteps_aim = 100;
                 OC2R = 1600;
                 substate = 1;
-                __delay_ms(1000);
+                __delay_ms(2000);
                 OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
-                _LATB14 = 1;
+                _LATA0 = 1;
             }
             else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 0){
 //                _OC2IE = 1;
@@ -412,11 +414,11 @@ int main(void) {
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 2;
-                __delay_ms(1000);
+                __delay_ms(2000);
                 OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
-                _LATB14 = 1;
+                _LATA0 = 1;                                                                                                                                                                                                                                                                                                          
             }
             else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 1){
 //                _OC2IE = 1;
@@ -424,20 +426,20 @@ int main(void) {
                 desiredSteps_aim = 100;
                 OC2R = 1600;
                 substate = 2;
-                __delay_ms(1000);
+                __delay_ms(2000);
                 OC3R = 46500;
 //                __delay_ms(7000);
 //                OC3R = 0;
-                _LATB14 = 1;
+                _LATA0 = 1;
             } 
             else if (ADC1BUF9 >= vThresh2 && substate == 0 ){
-                __delay_ms(4000);
+                __delay_ms(5000);
                 if(ADC1BUF9 >= vThresh){
                     OC3R = 46500;
 //                    __delay_ms(7000);
 //                    OC3R = 0;
                 } 
-                _LATB14 = 0;
+                _LATA0 = 1;
             }
         }
 
