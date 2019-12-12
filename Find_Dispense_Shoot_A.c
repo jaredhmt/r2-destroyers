@@ -322,6 +322,7 @@ int main(void) {
             _LATB9 = 1;
         }
         if(state == 1){//move to dispenser and retrieve balls
+            _LATA0 = 0; // TURN OFF DC MOTORS
             _LATB9 = 1;//activate the move motor
             _LATB7 = 1;//set directions to backwards
             _LATB8 = 1;//set directions to backwards
@@ -330,7 +331,7 @@ int main(void) {
             
         }
         else if(state == 2){//return to center
-            
+            _LATA0 = 0; // TURN OFF DC MOTORS
             _LATB9 = 1;
             _LATB8 = 0; // pin 12 is high sets direction of left stepper
             _LATB7 = 0; // pin 11 is low sets direction for right stepper
@@ -442,8 +443,10 @@ int main(void) {
                 } 
                 _LATA0 = 1;
             }
+            __delay_ms(3000);
+            state = 1;
         }
-
+        
     }
     return 0;
 }

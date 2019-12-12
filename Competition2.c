@@ -1,23 +1,14 @@
 /*
- * File:   Demo_V2.c
+ * File:   Competition2.c
  * Author: acam2
  *
  * Created on December 13, 2019, 9:38 PM
  */
-/* 
- * ============================ MILESTONE 10 INSTRUCTIONS ============================
- * 
-Demonstrate the ability of your robot to find the dispenser, collect three 
- * balls, navigate to an appropriate position for scoring, and attempt to score. 
- * Submit a video of the robot in action via Learning Suite. For full points, 
- * this should be accomplished under battery power.
- */
-
 /*This code uses a state machine
  * state = 1 retrieve balls state
  * state = 2 return to center state
- * state = 3 scan sensors state
- * state = 4 aim shooter state
+ * state = 3 aim shooter state
+ * state = 4 fire shooter state
  */
 
 #include "xc.h"
@@ -38,13 +29,14 @@ int  distanceForward = 20; // inches
 int OC2count = 0; // Set Global Variable OC1count
 int desiredSteps_aim = 0; // Set Global Variable desiredSteps
 int state = 0; // Set Global Variable state
-int substate = 0;//this defines where the shoooter is currently aimed
-//0 = front motor, 1 = left goal, 2 = right goal
 int desiredSteps_movement = 3000;
 int OC1count = 0;
 int currentGoal = 0;//defines where the shooter is currently aimed
 int desiredGoal = 0;//defines where the shooter should be aimed
 //front goal  = 0, left goal = 1, right goal = -1
+
+int shootCount = 0;//this counts the cycles for shooting
+int totalShootTime = 700;
 
 void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void){
 
@@ -72,7 +64,6 @@ void __attribute__((interrupt, no_auto_psv)) _OC1Interrupt(void){
             state = 1;            //this sets the state to the move forward and collect ball state
             
         }
-        
     }
     else if(OC1count >= desiredSteps_movement && state == 2){
         OC1R = 0;
@@ -92,15 +83,15 @@ void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void){
         OC1R = 0;
         // _LATB9 = 0;
         while(flashcount < 5){
-            _LATB14 = 1;//turn on pin 17
+            _LATB14 = 1;//turn on pin 17(LED)
             __delay_ms(200);
-            _LATB14 = 0;
+            _LATB14 = 0;//turn off LED
             __delay_ms(200);
             flashcount++;
         }
         state = 2;//now that we have dispensed the balls, change the state
         OC1count = 0;
-        desiredSteps_movement = 600;   
+        desiredSteps_movement = 600;//we're gonna move the bot 600 steps   
         OC1R = 1000;
     }
     else{
@@ -140,12 +131,13 @@ void PinIOConfig(void){
     // AD1CSS registers
     // SET THE BITS CORRESPONDING TO CHANNELS THAT YOU WANT
     // TO SAMPLE
-    _CSS13 =  1; //scan chanel 13 = left sensor on pin 7
-    _CSS14 = 1; //scan chanel 14 = right sensor on pin 8
-    _CSS15 = 1; //scan chanel 15 = back sensor on pin 9(facing dispenser)
-    _CSS9 = 1; //scan chanel 9 = front sensor om pin 18
+    _CSS13 = 1; //scan chanel 13 = right sensor on pin 7(front)
+    _CSS14 = 1; //scan chanel 14 = left sensor on pin 8(back)
+    _CSS15 = 1; //scan chanel 15 = back sensor on pin 9(left)
+    _CSS9 = 1; //scan chanel 9 = front sensor om pin 18(right)
     _ADON = 1;    // AD1CON1<15> -- Turn on A/D
     
+    +
    // Configure the digital I/O ports
 //    // PLACE CODE TO CONFIGURE THE DIGITAL I/O PORTS HERE
  ANSA = 0;
@@ -304,6 +296,17 @@ _CNIP = 6; // Set CN interrupt priority (IPC4 register)
 _CNIF = 0; // Clear interrupt flag (IFS1 register)
 _CNIE = 1; // Enable CN interrupts (IEC1 register)   
 }
+void Scan(void){
+    if(ADC1BUF9 > vThresh){//if right sensor is active
+        desiredGoal = 1;//set desired goal to front
+    }
+    else if(ADC1BUF13 > vThresh){//if front sensor is active
+        desiredGoal = 0;
+    }
+    else if(ADC1BUF15 < vThresh){//if left sensor is active
+        desiredGoal = -1;
+    }
+}
 
 int main(void) {
     PinIOConfig();
@@ -319,9 +322,12 @@ int main(void) {
             _LATB7 = 1;               //Sets the direction pin - See above
             _OC1IE = 1;
             OC1R = 1000;              //You spin my head right round right round like a record baby right round round round.
-            _LATB9 = 1;
+            _LATB9 = 1;//turn on move motor
+            
         }
         if(state == 1){//move to dispenser and retrieve balls
+            _LATB2 = 0;//sleep the aim motor
+            _LATA0 = 0; // TURN OFF DC MOTORS
             _LATB9 = 1;//activate the move motor
             _LATB7 = 1;//set directions to backwards
             _LATB8 = 1;//set directions to backwards
@@ -330,120 +336,88 @@ int main(void) {
             
         }
         else if(state == 2){//return to center
-            
-            _LATB9 = 1;
+            _LATB2 = 0;//sleep the aim motor
+            _LATA0 = 0; // TURN OFF DC MOTORS
+            _LATB9 = 1;//turn on move motor
             _LATB8 = 0; // pin 12 is high sets direction of left stepper
             _LATB7 = 0; // pin 11 is low sets direction for right stepper
             desiredSteps_movement = 600;   
             OC1R = 1000;
         }
-        else if(state == 3){// AIM AND SHOOT
-            _OC2IE = 1;
+        else if(state == 3){// AIM STATE
+            _OC2IE = 1; //enable aiming interrupt
             _LATB9 = 0; // SLEEP MOVEMENT STEPPERS
             _LATA0 = 1; // TURN ON DC MOTORS
-/*
- *  THIS SECTION VERIFIES THAT EACH IR SENSOR WORKS.
- *  USING THIS CODE, I DISCOVERED THAT THE FRONT IR (9) IS THE MOST SENSITIVE
- *  AND CAN SENSE IR CLICKER FROM ALMOST A FOOT AWAY. THE TWO SIDE SENSORS ARE
- *  MUCH LESS SENSITIVE AND THE CLICKER MUST BE WITHIN AN INCH OF THE SENSOR.
- *  I HAVE NOW VERIFIED THAT OC2count AND substate ARE BOTH 0 WHEN ENTERING
- *  STATE 3. NEXT STEP, UNCOMMENT LOGIC AND HAVE PIN 17 GO HIGH/LOW BASED ON 
- *  substate.
-            if(ADC1BUF9 > 0.5 * vThresh && OC2count == 0 && substate == 0){
-                _LATB14 = 1;
+            _LATB2 = 1;//activate the aim motor
+            Scan();
+            if(currentGoal == desiredGoal){//if we are currently aimed at correct goal
+                state = 4;//jump to firing state
             }
-            else{
-                _LATB14 = 0;
+            else if(currentGoal != desiredGoal){//aimed at the wrong goal
+                
+                if(desiredGoal == 0 && currentGoal == -1){//front goal active and currently aimed at left goal
+                    _LATA1 = 1;//set the aiming direction to CW
+                    desiredSteps_aim = 50;//we need to turn 90 degrees
+                    OC2R = 1600;//turn on the aim PWM
+                    __delay_ms(1500);//give the aim motor time to turn
+                    currentGoal = 0;
+                }
+                else if(desiredGoal == 0 && currentGoal == 1){//front goal active and currently aimed at right goal
+                    _LATA1 = 0;//set the aiming direction to CCW
+                    desiredSteps_aim = 50;//we need to turn 90 degrees
+                    OC2R = 1600;//turn on the aim PWM
+                    __delay_ms(1500);//give the aim motor time to turn
+                    currentGoal = 0;                    
+                }
+                else if(desiredGoal == 1 && currentGoal == 0){//right goal active and currently aimed at front goal
+                    _LATA1 = 1;//set the aiming direction to CW
+                    desiredSteps_aim = 50;//we need to turn 90 degrees
+                    OC2R = 1600;//turn on the aim PWM
+                    __delay_ms(1500);//give the aim motor time to turn
+                    currentGoal = 1;                    
+                }
+                else if(desiredGoal == 1 && currentGoal == -1){//right goal active and currently aimed at left goal
+                    _LATA1 = 1;//set the aiming direction to CW
+                    desiredSteps_aim = 100;//we need to turn 180 degrees
+                    OC2R = 1600;//turn on the aim PWM
+                    __delay_ms(1500);//give the aim motor time to turn
+                    currentGoal = 1;                    
+                }
+                else if(desiredGoal == -1 && currentGoal == 0){//left goal active and currently aimed at front goal
+                    _LATA1 = 0;//set the aiming direction to CCW
+                    desiredSteps_aim = 50;//we need to turn 90 degrees
+                    OC2R = 1600;//turn on the aim PWM
+                    __delay_ms(1500);//give the aim motor time to turn
+                    currentGoal = -1;                    
+                }
+                else if(desiredGoal == -1 && currentGoal == 1){//left goal active and currently aimed at right goal
+                    _LATA1 = 0;//set the aiming direction to CCW
+                    desiredSteps_aim = 100;//we need to turn 180 degrees
+                    OC2R = 1600;//turn on the aim PWM
+                    __delay_ms(1500);//give the aim motor time to turn
+                    currentGoal = -1;                    
+                }
             }
-*/
             
-            // TURN OFF MOVEMENT STEPPERS AND PWM
-//                        _LATA0 = 1; // START DC MOTORS
-
-            // AIM AND SHOOT
-            if (ADC1BUF9 >= vThresh2*1.2 && OC2count == 0 && substate == 1 ){//if front goal is active, and we are currently aimed at left goal
-//                _OC2IE = 1;
-                _LATA1 = 1;
-                desiredSteps_aim = 50;
-                OC2R = 1600;
-                substate = 0;
-                __delay_ms(1500);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
-                _LATA0 = 1;
+        }
+        else if (state == 4){//firing state
+            _LATA0 = 1; // TURN ON DC MOTORS
+            _LATB9 = 0; // SLEEP MOVEMENT STEPPERS
+            _LATB2 = 1;//activate the aim motor
+            Scan();
+            if(shootCount >= totalShootTime){//if we are done firing
+                state = 1;//jump to retrieve balls state
             }
-            else if (ADC1BUF9 >= vThresh2*1.2 && OC2count == 0 && substate == 2 ){//if front goal is active and we are currently aimed at right goal
-//                _OC2IE = 1;
-                _LATA1 = 0;
-                desiredSteps_aim = 50;
-                OC2R = 1600;
-                substate = 0;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
-                _LATA0 = 1;
+            else if(shootCount < totalShootTime && currentGoal == desiredGoal){
+                OC3R = 4650;//open the servo
+                shootCount++;
             }
-            else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 0){//if right goal is active and we are currently aimed at front goal
-//                _OC2IE = 1;
-                _LATA1 = 0;
-                desiredSteps_aim = 50;
-                OC2R = 1600;
-                substate = 1;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
-                _LATA0 = 1;
-            }
-            else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 2){
-//                _OC2IE = 1;
-                _LATA1 = 0;
-                desiredSteps_aim = 100;
-                OC2R = 1600;
-                substate = 1;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
-                _LATA0 = 1;
-            }
-            else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 0){
-//                _OC2IE = 1;
-                _LATA1 = 1;
-                desiredSteps_aim = 50;
-                OC2R = 1600;
-                substate = 2;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
-                _LATA0 = 1;                                                                                                                                                                                                                                                                                                          
-            }
-            else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 1){
-//                _OC2IE = 1;
-                _LATA1 = 1;
-                desiredSteps_aim = 100;
-                OC2R = 1600;
-                substate = 2;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
-                _LATA0 = 1;
-            } 
-            else if (ADC1BUF9 >= vThresh2 && substate == 0 ){
-                __delay_ms(5000);
-                if(ADC1BUF9 >= vThresh){
-                    OC3R = 46500;
-//                    __delay_ms(7000);
-//                    OC3R = 0;
-                } 
-                _LATA0 = 1;
+            else if(shootCount < totalShootTime && currentGoal != desiredGoal){
+                state = 3;//jump to aiming state
             }
         }
 
     }
     return 0;
 }
+

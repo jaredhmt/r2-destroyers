@@ -1,6 +1,6 @@
 /*
  * File:   Demo_V2.c
- * Author: acam2
+ * Author: Ta mere
  *
  * Created on December 13, 2019, 9:38 PM
  */
@@ -32,6 +32,9 @@ Demonstrate the ability of your robot to find the dispenser, collect three
 
 #define vThresh 2450//threshold for IR detection
 #define vThresh2 1000 // threshold for aiming IR detection
+#define servo_closed 45000 //PWM signal for closed servo on OC3
+#define servo_open 46500 //PWM signal for closed servo on OC3
+#define servo_wait 1000 //The time it delays for the shooter to turn before opening the servo
 
 int  distanceForward = 20; // inches
 
@@ -44,6 +47,7 @@ int desiredSteps_movement = 3000;
 int OC1count = 0;
 int currentGoal = 0;//defines where the shooter is currently aimed
 int desiredGoal = 0;//defines where the shooter should be aimed
+int OC3count = 0;
 //front goal  = 0, left goal = 1, right goal = -1
 
 void __attribute__((interrupt, no_auto_psv)) _OC2Interrupt(void){
@@ -81,6 +85,35 @@ void __attribute__((interrupt, no_auto_psv)) _OC1Interrupt(void){
         OC2count = 0;
     }
 }
+void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void){
+    _OC3IF = 0;  // Remember to clear the OC3 interrupt flag when
+    if (state == 3 && OC3R == servo_open){
+         OC3count++;
+         if (OC3count > 120){
+             state = 1;
+             OC3R = servo_closed;
+             _LATA0 = 0; //turns off DC motors
+             _LATB9 = 1; //Turns on Move steppers
+             OC3count = 0; //resets OC3 count 
+             if (substate != 0){
+                 if(substate == 1){
+                    OC2count = 0;
+                    _LATA1 = 1;
+                    desiredSteps_aim = 50;
+                    OC2R = 1600;
+                 }
+                 else if(substate == 2){
+                     OC2count = 0;
+                    _LATA1 = 0;
+                    desiredSteps_aim = 50;
+                    OC2R = 1600;
+                 }
+                 substate = 0;
+             }
+             
+         }
+    }
+}
 void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void){
     _CNIF = 0; // Clear interrupt flag (IFS1 register)
     
@@ -91,7 +124,7 @@ void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void){
     if(_RA4 == 1 && state == 1){
         OC1R = 0;
         // _LATB9 = 0;
-        while(flashcount < 5){
+        while(flashcount < 9){
             _LATB14 = 1;//turn on pin 17
             __delay_ms(200);
             _LATB14 = 0;
@@ -107,6 +140,7 @@ void __attribute__((interrupt, no_auto_psv)) _CNInterrupt(void){
         _LATB14 = 0;
     }
 } 
+
 void PinIOConfig(void){
     
      // -----SETUP ANALOG CHANNELS-----
@@ -258,7 +292,7 @@ void PinIOConfig(void){
     OC3CON2 = 0;
    
     // Set period and duty cycle
-    OC3R = 45000;               // Set Output Compare value to achieve
+    OC3R = servo_closed;               // Set Output Compare value to achieve
                                 // desired duty cycle. This is the number
                                 // of timer counts when the OC should send
                                 // the PWM signal low. The duty cycle as a
@@ -287,6 +321,11 @@ void PinIOConfig(void){
                                 // triggering with the OC1 source
     OC3CON1bits.OCM = 0b110;    // Edge-aligned PWM mode
 /////////////////////////////////////////////////////////////////////// 
+    // OC3 INTERUPT
+ _OC3IE = 0;
+ _OC3IF = 0;
+ _OC3IP = 4;
+ 
     // OC2 INTERUPT
  _OC2IE = 0;
  _OC2IF = 0;
@@ -338,6 +377,7 @@ int main(void) {
             OC1R = 1000;
         }
         else if(state == 3){// AIM AND SHOOT
+            _OC3IE = 1;
             _OC2IE = 1;
             _LATB9 = 0; // SLEEP MOVEMENT STEPPERS
             _LATA0 = 1; // TURN ON DC MOTORS
@@ -362,83 +402,74 @@ int main(void) {
 
             // AIM AND SHOOT
             if (ADC1BUF9 >= vThresh2*1.2 && OC2count == 0 && substate == 1 ){//if front goal is active, and we are currently aimed at left goal
-//                _OC2IE = 1;
+                OC3R = servo_closed;
+                _OC2IE = 1;
                 _LATA1 = 1;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 0;
-                __delay_ms(1500);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
+                __delay_ms(servo_wait);
+                OC3R = servo_open;
                 _LATA0 = 1;
             }
             else if (ADC1BUF9 >= vThresh2*1.2 && OC2count == 0 && substate == 2 ){//if front goal is active and we are currently aimed at right goal
-//                _OC2IE = 1;
+                OC3R = servo_closed;
                 _LATA1 = 0;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 0;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
+                __delay_ms(servo_wait);
+                OC3R = servo_open;
                 _LATA0 = 1;
             }
             else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 0){//if right goal is active and we are currently aimed at front goal
-//                _OC2IE = 1;
+                OC3R = servo_closed;
                 _LATA1 = 0;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 1;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
+                __delay_ms(servo_wait);
+                OC3R = servo_open;
                 _LATA0 = 1;
             }
             else if (ADC1BUF14 >= vThresh2 && OC2count == 0 && substate == 2){
-//                _OC2IE = 1;
+                OC3R = servo_closed;
                 _LATA1 = 0;
                 desiredSteps_aim = 100;
                 OC2R = 1600;
                 substate = 1;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
+                __delay_ms(servo_wait*2);
+                OC3R = servo_open;
                 _LATA0 = 1;
             }
             else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 0){
-//                _OC2IE = 1;
+                OC3R = servo_closed;
+
                 _LATA1 = 1;
                 desiredSteps_aim = 50;
                 OC2R = 1600;
                 substate = 2;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
+                __delay_ms(servo_wait);
+                OC3R = servo_open;
                 _LATA0 = 1;                                                                                                                                                                                                                                                                                                          
             }
             else if (ADC1BUF13 >= vThresh2 && OC2count == 0 && substate == 1){
-//                _OC2IE = 1;
+                OC3R = servo_closed;
+
                 _LATA1 = 1;
                 desiredSteps_aim = 100;
                 OC2R = 1600;
                 substate = 2;
-                __delay_ms(2000);
-                OC3R = 46500;
-//                __delay_ms(7000);
-//                OC3R = 0;
+                __delay_ms(servo_wait*2);
+                OC3R = servo_open;
+
                 _LATA0 = 1;
             } 
             else if (ADC1BUF9 >= vThresh2 && substate == 0 ){
-                __delay_ms(5000);
-                if(ADC1BUF9 >= vThresh){
-                    OC3R = 46500;
-//                    __delay_ms(7000);
-//                    OC3R = 0;
+                __delay_ms(1000);
+                if(ADC1BUF9 >= vThresh2){
+                    OC3R = servo_open;
+
                 } 
                 _LATA0 = 1;
             }
