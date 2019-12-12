@@ -41,7 +41,7 @@ int  distanceForward = 20; // inches
 int OC2count = 0; // Set Global Variable OC1count
 int desiredSteps_aim = 0; // Set Global Variable desiredSteps
 int state = 0; // Set Global Variable state
-int substate = 0;//this defines where the shoooter is currently aimed
+int substate = -1;//this defines where the shoooter is currently aimed
 //0 = front motor, 1 = left goal, 2 = right goal
 int desiredSteps_movement = 3000;
 int OC1count = 0;
@@ -89,7 +89,7 @@ void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void){
     _OC3IF = 0;  // Remember to clear the OC3 interrupt flag when
     if (state == 3 && OC3R == servo_open){
          OC3count++;
-         if (OC3count > 120){
+         if (OC3count > 160){
              state = 1;
              OC3R = servo_closed;
              _LATA0 = 0; //turns off DC motors
@@ -108,7 +108,7 @@ void __attribute__((interrupt, no_auto_psv)) _OC3Interrupt(void){
                     desiredSteps_aim = 50;
                     OC2R = 1600;
                  }
-                 substate = 0;
+                 substate = -1;
              }
              
          }
@@ -221,7 +221,7 @@ void PinIOConfig(void){
                                 // of timer counts when the OC should send
                                 // the PWM signal low. The duty cycle as a
                                 // fraction is OC1R/OC1RS.
-    OC1RS = 20000;             // Period of OC1 to achieve desired PWM 
+    OC1RS = 15000;             // Period of OC1 to achieve desired PWM 
                                 // frequency, FPWM. See Equation 15-1
                                 // in the datasheet. For example, for
                                 // FPWM = 1 kHz, OC1RS = 3999. The OC1RS 
@@ -465,13 +465,12 @@ int main(void) {
 
                 _LATA0 = 1;
             } 
-            else if (ADC1BUF9 >= vThresh2 && substate == 0 ){
-                __delay_ms(1000);
+            else if (ADC1BUF9 >= vThresh2 && substate == -1 ){
+                __delay_ms(500);
                 if(ADC1BUF9 >= vThresh2){
+                    substate = 0;
                     OC3R = servo_open;
-
                 } 
-                _LATA0 = 1;
             }
         }
 
